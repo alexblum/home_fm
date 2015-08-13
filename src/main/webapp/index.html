@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>homeFM</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./resources/css/pure.css" />
+    <link rel="stylesheet" href="./resources/css/pure-button.css" />
+    <link rel="stylesheet" href="./resources/css/pure-tables.css" />
+    <link rel="stylesheet" href="./resources/css/pure-forms.css" />
+  </head>
+  <body style="padding: 5px;">
+    <h1>homeFM</h1>
+    <div id="info_area">
+
+    </div>
+    <div id="main_content">
+      <button class="pure-button" onclick="stopServer();">stop the server</button>
+    </div>
+
+    <script type="text/javascript">
+      var loc = document.location;
+      var restBaseUrl = loc.protocol + "//" + loc.host + "/rest/";
+
+      checkServer();
+
+      function checkServer() {
+        var infoArea = document.getElementById('info_area');
+        var hiUrl = restBaseUrl + 'hello';
+
+        clearNode(infoArea);
+        var req = new XMLHttpRequest();
+        req.open('GET', hiUrl, false);
+        req.send();
+
+        var info = document.createElement('span');
+        if ('hi' === req.responseText) {
+          info.style.color = 'green';
+          info.textContent = 'Server online';
+        }
+        infoArea.appendChild(info);
+      }
+
+      function stopServer() {
+        var stopUrl = restBaseUrl + 'stop';
+
+        var req = new XMLHttpRequest();
+        req.open('GET', stopUrl, false);
+        req.send();
+        
+        setTimeout(checkServer, 6000);
+      }
+
+      function clearNode(node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+    </script>
+  </body>
+</html>

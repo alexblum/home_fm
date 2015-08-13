@@ -10,14 +10,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-@Path("/fm")
+@Path("/")
 public class RestInterface {
 
   @GET
   @Path("hello")
   @Produces(MediaType.APPLICATION_JSON)
   public String hello() {
-    return "hi there :)";
+    return "hi";
   }
 
   @GET
@@ -26,6 +26,13 @@ public class RestInterface {
   public String stop() {
     App.getSingleton().interruptMainLoop();
     return "stopping now";
+  }
+  
+  @GET
+  @Path("get_playlists")
+  @Produces(MediaType.APPLICATION_JSON)
+  public String getPlaylists() {
+    return "";
   }
 
   @POST
