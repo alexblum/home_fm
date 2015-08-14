@@ -56,5 +56,10 @@
       <artifactId>mysql-connector-java</artifactId>
       <version>5.1.34</version>
     </dependency>
+    <dependency>
+      <groupId>com.mpatric</groupId>
+      <artifactId>mp3agic</artifactId>
+      <version>0.8.3</version>
+    </dependency>
   </dependencies>
 </project>

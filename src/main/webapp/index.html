@@ -15,7 +15,18 @@
 
     </div>
     <div id="main_content">
-      <button class="pure-button" onclick="stopServer();">stop the server</button>
+      <table class="pure-table pure-table-striped" id="playlist_overview">
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
+            <th>Playlists</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+    <div id="sub_content" style="margin: 10px;">
+      <button class="pure-button" onclick="startFileWalker();" style="margin-right:5px;">start fileWalker</button>
+      <button class="pure-button" onclick="stopServer();" style="margin-right:5px;">stop the server</button>
     </div>
 
     <script type="text/javascript">
@@ -23,6 +34,64 @@
       var restBaseUrl = loc.protocol + "//" + loc.host + "/rest/";
 
       checkServer();
+      fillPlaylistOverview();
+
+      function fillPlaylistOverview() {
+        var playlistUrl = restBaseUrl + "get_playlists";
+        var req = new XMLHttpRequest();
+        req.open('GET', playlistUrl, false);
+        req.send();
+        var playlists = JSON.parse(req.responseText);
+        var table = document.getElementById('playlist_overview');
+        if (playlists.length === 0) {
+          var tr = document.createElement('tr');
+          var td = document.createElement('td');
+          td.textContent = 'no playlists found :(';
+          td.colSpan = '2';
+          tr.appendChild(td);
+          table.appendChild(tr);
+          return;
+        }
+
+        for (var n = 0; n < playlists.length; n++) {
+          var playlist = playlists[n];
+
+          var tr = document.createElement('tr');
+          var td1 = document.createElement('td');
+          td1.textContent = playlist.id;
+          var td2 = document.createElement('td');
+          td2.onclick = function () {
+            showPlaylist(this.playlistId);
+          };
+          td2.playlistId = playlist.id;
+          td2.textContent = playlist.name;
+          tr.appendChild(td1);
+          tr.appendChild(td2);
+          table.appendChild(tr);
+        }
+      }
+
+      function showPlaylist(playlistId) {
+        var songsForPlaylistUrl = restBaseUrl + "get_songs_for_playlist/" + playlistId;
+        var req = new XMLHttpRequest();
+        req.open('GET', songsForPlaylistUrl, false);
+        req.send();
+        var songs = JSON.parse(req.responseText);
+        var summaries = [];
+        for(var n=0; n<songs.length;n++) {
+          var song=songs[n];
+          summaries.push(song.artist + " - " + song.title);
+        }
+        alert(summaries);
+      }
+
+      function startFileWalker() {
+        var fileWalkerUrl = restBaseUrl + "scan_files";
+        var req = new XMLHttpRequest();
+        req.open('GET', fileWalkerUrl, false);
+        req.send();
+        alert(req.responseText);
+      }
 
       function checkServer() {
         var infoArea = document.getElementById('info_area');
@@ -47,7 +116,7 @@
         var req = new XMLHttpRequest();
         req.open('GET', stopUrl, false);
         req.send();
-        
+
         setTimeout(checkServer, 6000);
       }
 
