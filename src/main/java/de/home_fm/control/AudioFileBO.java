@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -38,6 +39,14 @@ public class AudioFileBO {
       Logger.getLogger(AudioFileBO.class.getName()).log(Level.SEVERE, null, ex);
     }
     return result;
+  }
+
+  public AudioFile findById(long songId) {
+    List<AudioFile> audioFiles = findByIds(Collections.singletonList(songId));
+    if (audioFiles.isEmpty()) {
+      return null;
+    }
+    return audioFiles.get(0);
   }
 
   private List<AudioFile> findByIds(List<Long> ids) {

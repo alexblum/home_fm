@@ -7,6 +7,7 @@ import de.home_fm.entity.AudioFile;
 import de.home_fm.entity.Playlist;
 import de.home_fm.entity.dao.PlaylistDAO;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
@@ -59,6 +60,18 @@ public class RestInterface {
   @Produces(MediaType.APPLICATION_JSON)
   public List<AudioFile> getPlaylists(@PathParam("playlist_id") long playlistId) throws Exception {
     return new AudioFileBO().findByPlaylistId(playlistId);
+  }
+
+  @GET
+  @Path("song/{song_id}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public byte[] getSong(@PathParam("song_id") long songId) throws Exception {
+    AudioFile audioFile = new AudioFileBO().findById(songId);
+    if (audioFile == null) {
+      return null;
+    }
+    System.out.println("loading " + audioFile.getFilename().toString());
+    return Files.readAllBytes(audioFile.getFilename());
   }
 
   @POST

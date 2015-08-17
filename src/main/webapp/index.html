@@ -4,6 +4,7 @@
     <title>homeFM</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./resources/css/style.css" />
     <link rel="stylesheet" href="./resources/css/pure.css" />
     <link rel="stylesheet" href="./resources/css/pure-button.css" />
     <link rel="stylesheet" href="./resources/css/pure-tables.css" />
@@ -11,30 +12,52 @@
   </head>
   <body style="padding: 5px;">
     <h1>homeFM</h1>
+    <div id="top_menu" style="margin: 10px;">
+      <button class="pure-button pure-button-primary"
+              onclick="document.getElementById('playlist_select_overlay').classList.remove('hidden')"
+              style="margin-right:5px;">select playlist</button>
+    </div>
+    <div id="audio_player_container" style="margin: 10px;">
+      <audio id="audio_player" controls preload="auto"></audio>
+    </div>
     <div id="info_area">
 
     </div>
+    <div id="player_area" style="margin: 10px;">
+    </div>
     <div id="main_content">
-      <table class="pure-table pure-table-striped" id="playlist_overview">
-        <thead>
-          <tr>
-            <th>&nbsp;</th>
-            <th>Playlists</th>
-          </tr>
-        </thead>
-      </table>
     </div>
     <div id="sub_content" style="margin: 10px;">
       <button class="pure-button" onclick="startFileWalker();" style="margin-right:5px;">start fileWalker</button>
       <button class="pure-button" onclick="stopServer();" style="margin-right:5px;">stop the server</button>
     </div>
 
+    <div id="playlist_select_overlay" class="playlist_select_overlay hidden">
+      <div id="playlist_select" class="playlist_select">
+        <table class="pure-table pure-table-striped" id="playlist_overview">
+          <thead>
+            <tr>
+              <th>&nbsp;</th>
+              <th>Playlists</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+
     <script type="text/javascript">
       var loc = document.location;
       var restBaseUrl = loc.protocol + "//" + loc.host + "/rest/";
 
+      var currentSongs = [];
+      var currentSongIndex = 0;
+
+      var audioPlayer = document.getElementById('audio_player');
+      audioPlayer.addEventListener("ended", nextSong);
+
       checkServer();
       fillPlaylistOverview();
+      drawSonglist();
 
       function fillPlaylistOverview() {
         var playlistUrl = restBaseUrl + "get_playlists";
@@ -61,7 +84,8 @@
           td1.textContent = playlist.id;
           var td2 = document.createElement('td');
           td2.onclick = function () {
-            showPlaylist(this.playlistId);
+            selectPlaylist(this.playlistId);
+            document.getElementById('playlist_select_overlay').classList.add('hidden');
           };
           td2.playlistId = playlist.id;
           td2.textContent = playlist.name;
@@ -71,18 +95,111 @@
         }
       }
 
-      function showPlaylist(playlistId) {
+      function selectPlaylist(playlistId) {
         var songsForPlaylistUrl = restBaseUrl + "get_songs_for_playlist/" + playlistId;
         var req = new XMLHttpRequest();
         req.open('GET', songsForPlaylistUrl, false);
         req.send();
         var songs = JSON.parse(req.responseText);
-        var summaries = [];
-        for(var n=0; n<songs.length;n++) {
-          var song=songs[n];
-          summaries.push(song.artist + " - " + song.title);
+
+        var playerArea = document.getElementById('player_area');
+        clearNode(playerArea);
+
+        currentSongs = songs;
+        currentSongIndex = 0;
+
+        var buttonPlay = document.createElement('button');
+        buttonPlay.classList.add('pure-button');
+        buttonPlay.classList.add('pure-button-primary');
+        buttonPlay.textContent = 'pause';
+        buttonPlay.style.marginRight = '5px';
+        buttonPlay.onclick = pauseOrPlay;
+        buttonPlay.id = 'play_button';
+        var buttonNext = document.createElement('button');
+        buttonNext.classList.add('pure-button');
+        buttonNext.textContent = 'next';
+        buttonNext.onclick = nextSong;
+
+        playerArea.appendChild(buttonPlay);
+        playerArea.appendChild(buttonNext);
+
+        playCurrentSong();
+      }
+
+      function pauseOrPlay() {
+        var buttonPlay = document.getElementById('play_button');
+        if (audioPlayer.paused) {
+          audioPlayer.play();
+          buttonPlay.textContent = 'pause';
+        } else {
+          audioPlayer.pause();
+          buttonPlay.textContent = 'play';
         }
-        alert(summaries);
+      }
+
+      function playCurrentSong() {
+        var currentSong = currentSongs[currentSongIndex];
+
+        audioPlayer.pause();
+        clearNode(audioPlayer);
+        audioPlayer.src = '';
+
+        audioPlayer.src = restBaseUrl + 'song/' + currentSong.id;
+
+        drawSonglist();
+
+        audioPlayer.play();
+      }
+
+      function drawSonglist() {
+        var infoArea = document.getElementById('info_area');
+        clearNode(infoArea);
+
+        var songTable = document.createElement('table');
+        songTable.classList.add('pure-table');
+        songTable.classList.add('pure-table-striped');
+        var songTableHeader = document.createElement('thead');
+        var songTableHeaderRow = document.createElement('tr');
+        var songTableHeaderRowArtist = document.createElement('th');
+        songTableHeaderRowArtist.textContent = 'artist';
+        var songTableHeaderRowTitle = document.createElement('th');
+        songTableHeaderRowTitle.textContent = 'title';
+
+        songTableHeaderRow.appendChild(songTableHeaderRowArtist);
+        songTableHeaderRow.appendChild(songTableHeaderRowTitle);
+        songTableHeader.appendChild(songTableHeaderRow);
+        songTable.appendChild(songTableHeader);
+
+        if (currentSongs.length === 0) {
+          var tr = document.createElement('tr');
+          var td = document.createElement('td');
+          td.textContent = 'empty playlist or not yet loaded :/';
+          td.colSpan = '2';
+          tr.appendChild(td);
+          songTable.appendChild(tr);
+        }
+
+        for (var n = 0; n < currentSongs.length; n++) {
+          var song = currentSongs[n];
+          var row = document.createElement('tr');
+          if (n === currentSongIndex) {
+            row.style.fontWeight = 'bold';
+          }
+          var artistLabel = document.createElement('td');
+          artistLabel.textContent = song.artist;
+          var titleLabel = document.createElement('td');
+          titleLabel.textContent = song.title;
+          row.appendChild(artistLabel);
+          row.appendChild(titleLabel);
+          songTable.appendChild(row);
+        }
+
+        infoArea.appendChild(songTable);
+      }
+
+      function nextSong() {
+        currentSongIndex = ++currentSongIndex % currentSongs.length;
+        playCurrentSong();
       }
 
       function startFileWalker() {
