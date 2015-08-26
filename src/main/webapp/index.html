@@ -13,17 +13,27 @@
   <body style="padding: 5px;">
     <h1>homeFM</h1>
     <div id="top_menu" style="margin: 10px;">
-      <button class="pure-button pure-button-primary"
+      <button class="pure-button"
               onclick="document.getElementById('playlist_select_overlay').classList.remove('hidden')"
-              style="margin-right:5px;">select playlist</button>
+              style="margin-right:5px; background-color: darkorange;">select playlist</button>
     </div>
     <div id="audio_player_container" style="margin: 10px;">
-      <audio id="audio_player" controls preload="auto"></audio>
+      <audio id="audio_player" preload="auto"></audio>
+      <audio id="audio_player_crossfader" preload="auto"></audio>
+    </div>
+    <div id="audio_controls" style="margin: 10px;">
+
+      <div id="controls_info">
+      </div>
+      <div id="controls_timer">
+      </div>
+
+      <button id="controls_play_button" class="pure-button pure-button-primary" onclick="pauseOrPlay();" style="margin-right: 5px;">pause</button>
+      <button id="controls_next_button" class="pure-button" onclick="nextSong();" style="margin-right: 5px;">next</button>
+
     </div>
     <div id="info_area">
 
-    </div>
-    <div id="player_area" style="margin: 10px;">
     </div>
     <div id="main_content">
     </div>
@@ -54,6 +64,13 @@
 
       var audioPlayer = document.getElementById('audio_player');
       audioPlayer.addEventListener("ended", nextSong);
+
+      var songInfoUpdateThreadId = null;
+      var fadingUpdateThreadId = null;
+
+      var crossfadingEnabled = true;
+      var crossfadingTimeInMillis = 5000;
+      var fadingUpdateInterval = 100;
 
       checkServer();
       fillPlaylistOverview();
@@ -102,34 +119,18 @@
         req.send();
         var songs = JSON.parse(req.responseText);
 
-        var playerArea = document.getElementById('player_area');
-        clearNode(playerArea);
-
         currentSongs = songs;
         currentSongIndex = 0;
-
-        var buttonPlay = document.createElement('button');
-        buttonPlay.classList.add('pure-button');
-        buttonPlay.classList.add('pure-button-primary');
-        buttonPlay.textContent = 'pause';
-        buttonPlay.style.marginRight = '5px';
-        buttonPlay.onclick = pauseOrPlay;
-        buttonPlay.id = 'play_button';
-        var buttonNext = document.createElement('button');
-        buttonNext.classList.add('pure-button');
-        buttonNext.textContent = 'next';
-        buttonNext.onclick = nextSong;
-
-        playerArea.appendChild(buttonPlay);
-        playerArea.appendChild(buttonNext);
 
         playCurrentSong();
       }
 
       function pauseOrPlay() {
-        var buttonPlay = document.getElementById('play_button');
+        var buttonPlay = document.getElementById('controls_play_button');
         if (audioPlayer.paused) {
+          audioPlayer.volume = 0;
           audioPlayer.play();
+          startUpdateIntervals();
           buttonPlay.textContent = 'pause';
         } else {
           audioPlayer.pause();
@@ -145,10 +146,89 @@
         audioPlayer.src = '';
 
         audioPlayer.src = restBaseUrl + 'song/' + currentSong.id;
+        audioPlayer.load();
 
         drawSonglist();
 
-        audioPlayer.play();
+        pauseOrPlay();
+
+        updateSongInfo();
+      }
+
+      function startUpdateIntervals() {
+        stopUpdateIntervals();
+        songInfoUpdateThreadId = setInterval(updateSongInfo, 1000);
+        fadingUpdateThreadId = setInterval(fadingUpdate, fadingUpdateInterval);
+      }
+
+      function stopUpdateIntervals() {
+        clearInterval(songInfoUpdateThreadId);
+        clearInterval(fadingUpdateThreadId);
+      }
+
+      function fadingUpdate() {
+        var currentSong = currentSongs[currentSongIndex];
+        var currentTime = audioPlayer.currentTime;
+        var duration = audioPlayer.duration;
+        var fadeOutPossible = true;
+        if (!duration || duration === Infinity || duration <= 0 || duration === NaN) {
+          if (currentSong.durationInSeconds > 0) {
+            duration = currentSong.durationInSeconds;
+          } else {
+            fadeOutPossible = false;
+          }
+        }
+
+        if (currentTime * 1000 < crossfadingTimeInMillis + 2 * fadingUpdateInterval) {
+          var newVolume = (currentTime * 1000) / crossfadingTimeInMillis;
+          if (newVolume > 1) {
+            newVolume = 1;
+          }
+          audioPlayer.volume = newVolume;
+          console.log('fade in: ' + (audioPlayer.volume * 100) + '%');
+        }
+
+        if (fadeOutPossible && duration !== currentTime && duration * 1000 - currentTime * 1000 < crossfadingTimeInMillis) {
+          audioPlayer.volume *= 0.98; //noob solution, may be replaced by something more sophisticated later
+          console.log('fade out: ' + (audioPlayer.volume * 100) + '%');
+        }
+      }
+
+      function updateSongInfo() {
+        var currentSong = currentSongs[currentSongIndex];
+        var currentTime = audioPlayer.currentTime;
+        var duration = audioPlayer.duration;
+        if (!duration || duration === Infinity || duration <= 0 || duration === NaN) {
+          if (currentSong.durationInSeconds > 0) {
+            duration = currentSong.durationInSeconds;
+          } else {
+            duration = currentTime;
+          }
+        }
+
+        var controlsInfo = document.getElementById('controls_info');
+        controlsInfo.textContent = currentSong.artist + " - " + currentSong.title;
+
+        var controlsTimer = document.getElementById('controls_timer');
+        controlsTimer.textContent = formatDecimal(currentTime) + ' / ' + formatDecimal(duration);
+        var percentage = currentTime / duration * 100;
+        controlsTimer.style.textAlign = 'center';
+        controlsTimer.style.margin = '5px';
+        controlsTimer.style.border = '1px solid grey';
+        controlsTimer.style.borderRadius = '2px';
+        controlsTimer.style.background = 'linear-gradient(90deg, rgba(255,128,0,1) 0%, rgba(255,128,0,1) ' + percentage + '%, rgba(255,255,255,1) ' + (percentage + 0.1) + '%, rgba(255,255,255,1) 100%)';
+
+//        console.log(controlsTimer.textContent);
+
+        if (audioPlayer.paused) {
+          stopUpdateIntervals();
+        }
+      }
+
+      function formatDecimal(n) {
+        var minutes = Math.floor(n / 59);
+        var seconds = Math.round(n % 59);
+        return minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
       }
 
       function drawSonglist() {
