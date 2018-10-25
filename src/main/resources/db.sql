@@ -1,3 +1,4 @@
+-- audio_file table
 CREATE TABLE `audio_file` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `filename` varchar(512) NOT NULL,
@@ -10,6 +11,7 @@ CREATE TABLE `audio_file` (
   KEY `filename` (`filename`(255))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- playlist table
 CREATE TABLE `playlist` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(256) NOT NULL,
@@ -17,6 +19,7 @@ CREATE TABLE `playlist` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- playlist_x_audio_file table
 CREATE TABLE `playlist_x_audio_file` (
   `playlist_id` int(11) NOT NULL,
   `audio_file_id` int(11) NOT NULL,
