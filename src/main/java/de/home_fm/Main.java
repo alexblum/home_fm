@@ -9,6 +9,7 @@ public class Main {
 
   private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
+  // start point
   public static void main(String[] args) {
     try {
       LOGGER.info("preparing server");
