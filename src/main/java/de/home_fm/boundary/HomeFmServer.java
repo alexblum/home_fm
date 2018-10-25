@@ -36,6 +36,9 @@ public class HomeFmServer {
     context.addFilter(filterHolder, "/*", null);
   }
 
+  /*
+  * start jetty server
+  */
   public void start() {
     try {
       jettyServer.start();
@@ -46,6 +49,9 @@ public class HomeFmServer {
     }
   }
 
+  /*
+  * stop jetty server 
+  */
   public void stop() {
     try {
       jettyServer.stop();
